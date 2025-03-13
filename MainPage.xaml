@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CryptoTracking.MainPage">
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25">
+
+            <ScrollView Orientation="Vertical" HeightRequest="100">
+                <Editor x:Name="InputTextEntry" 
+                    Placeholder="Введите криптовалюту, о которой хотите получить информацию"
+                    PlaceholderColor="Black"
+                    FontSize="18"
+                    BackgroundColor="LightGray"
+                    TextColor="Black"/>
+            </ScrollView>
+
+            <Button Text="Получить информацию"
+                Clicked="GetInfo"
+                BackgroundColor="Black"
+                TextColor="White"
+                FontSize="20"
+                CornerRadius="10"/>
+
+            <Label x:Name="Name" 
+                   Text="Название криптовалюты"
+                   FontSize="18"
+                   BackgroundColor="LightGray"
+                   TextColor="Black"/>
+
+            <Label x:Name="Price" 
+                   Text="Цена сейчас"
+                   FontSize="18"
+                   BackgroundColor="LightGray"
+                   TextColor="Black"/>
+
+            <Label x:Name="PercentChange1h" 
+                   Text="Изменение цены за последний час"
+                   FontSize="18"
+                   BackgroundColor="LightGray"
+                   TextColor="Black"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
