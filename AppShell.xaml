@@ -8,8 +8,12 @@
     Title="CryptoTracking">
 
     <ShellContent
-        Title="Home"
+        Title="Информациия о криптовалюте"
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
 
+    <ShellContent
+        Title="Графики"
+        ContentTemplate="{DataTemplate local:Charts}"
+        Route="Charts" />
 </Shell>

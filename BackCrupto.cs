@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
@@ -10,7 +12,21 @@ namespace CryptoTracking
     {
         private static readonly HttpClient client = new HttpClient();
 
-        public static async Task<(string Name, double? Price, double? Volume24h, double? PercentChange1h, double? PercentChange24h, double? PercentChange7d, DateTime? LastUpdated)> MainInfo(string cryptoName)
+        public static async Task<(
+            string Name,
+            int Id,
+            string Symbol,
+            decimal Price,
+            decimal Volume24h,
+            decimal VolumeChange24h,
+            decimal PercentChange1h,
+            decimal PercentChange24h,
+            decimal PercentChange7d,
+            decimal MarketCap,
+            decimal MarketCapDominance,
+            decimal FullyDilutedMarketCap,
+            DateTime LastUpdated
+        )> MainInfo(string cryptoName)
         {
             string API_KEY = "aa6c25cd-275a-4ec7-89b7-26c00e85be39";
             string apiUrl = $"https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol={cryptoName}";
@@ -33,18 +49,24 @@ namespace CryptoTracking
 
                         return (
                             crypto.Name,
-                            crypto.Quote.Usd.Price.HasValue ? Math.Round(crypto.Quote.Usd.Price.Value, 3) : (double?)null,
-                            crypto.Quote.Usd.Volume24h.HasValue ? Math.Round(crypto.Quote.Usd.Volume24h.Value, 3) : (double?)null,
-                            crypto.Quote.Usd.PercentChange1h.HasValue ? Math.Round(crypto.Quote.Usd.PercentChange1h.Value, 3) : (double?)null,
-                            crypto.Quote.Usd.PercentChange24h.HasValue ? Math.Round(crypto.Quote.Usd.PercentChange24h.Value, 3) : (double?)null,
-                            crypto.Quote.Usd.PercentChange7d.HasValue ? Math.Round(crypto.Quote.Usd.PercentChange7d.Value, 3) : (double?)null,
-                            crypto.Quote.Usd.LastUpdated != null ? DateTime.Parse(crypto.Quote.Usd.LastUpdated) : (DateTime?)null
+                            crypto.Id,
+                            crypto.Symbol,
+                            crypto.Quote.Usd.Price ?? 0,
+                            crypto.Quote.Usd.Volume24h ?? 0,
+                            crypto.Quote.Usd.VolumeChange24h ?? 0,
+                            crypto.Quote.Usd.PercentChange1h ?? 0,
+                            crypto.Quote.Usd.PercentChange24h ?? 0,
+                            crypto.Quote.Usd.PercentChange7d ?? 0,
+                            crypto.Quote.Usd.MarketCap ?? 0,
+                            crypto.Quote.Usd.MarketCapDominance ?? 0,
+                            crypto.Quote.Usd.FullyDilutedMarketCap ?? 0,
+                            crypto.Quote.Usd.LastUpdated != null ? DateTime.Parse(crypto.Quote.Usd.LastUpdated) : DateTime.MinValue
                         );
                     }
                     else
                     {
                         Console.WriteLine("Данные не найдены.");
-                        return (null, null, null, null, null, null, null);
+                        return (null, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, DateTime.MinValue);
                     }
                 }
                 else
@@ -52,22 +74,21 @@ namespace CryptoTracking
                     Console.WriteLine($"Ошибка: {response.StatusCode}");
                     string errorResponse = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Детали ошибки: {errorResponse}");
-                    return (null, null, null, null, null, null, null);
+                    return (null, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, DateTime.MinValue);
                 }
             }
             catch (HttpRequestException e)
             {
                 Console.WriteLine($"Ошибка при запросе к API: {e.Message}");
-                return (null, null, null, null, null, null, null);
+                return (null, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, DateTime.MinValue);
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Неизвестная ошибка: {e.Message}");
-                return (null, null, null, null, null, null, null);
+                return (null, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, DateTime.MinValue);
             }
         }
 
-        // Классы для десериализации
         public class CryptoInfo
         {
             [JsonProperty("data")]
@@ -86,16 +107,16 @@ namespace CryptoTracking
             public string Symbol { get; set; }
 
             [JsonProperty("circulating_supply")]
-            public double CirculatingSupply { get; set; }
+            public decimal CirculatingSupply { get; set; }
 
             [JsonProperty("market_cap_by_total_supply_strict")]
-            public double MarketCapByTotalSupplyStrict { get; set; }
+            public decimal MarketCapByTotalSupplyStrict { get; set; }
 
             [JsonProperty("last_updated")]
             public string LastUpdated { get; set; }
 
             [JsonProperty("percent_change_1h")]
-            public double? PercentChange1h { get; set; }
+            public decimal? PercentChange1h { get; set; }
 
             [JsonProperty("quote")]
             public QuoteData Quote { get; set; }
@@ -110,60 +131,59 @@ namespace CryptoTracking
         public class UsdData
         {
             [JsonProperty("price")]
-            public double? Price { get; set; }
+            public decimal? Price { get; set; }
 
             [JsonProperty("volume_24h")]
-            public double? Volume24h { get; set; }
+            public decimal? Volume24h { get; set; }
 
             [JsonProperty("volume_change_24h")]
-            public double? VolumeChange24h { get; set; }
+            public decimal? VolumeChange24h { get; set; }
 
             [JsonProperty("percent_change_1h")]
-            public double? PercentChange1h { get; set; }
+            public decimal? PercentChange1h { get; set; }
 
             [JsonProperty("percent_change_24h")]
-            public double? PercentChange24h { get; set; }
+            public decimal? PercentChange24h { get; set; }
 
             [JsonProperty("percent_change_7d")]
-            public double? PercentChange7d { get; set; }
+            public decimal? PercentChange7d { get; set; }
 
             [JsonProperty("market_cap")]
-            public double? MarketCap { get; set; }
+            public decimal? MarketCap { get; set; }
 
             [JsonProperty("market_cap_dominance")]
-            public double? MarketCapDominance { get; set; }
+            public decimal? MarketCapDominance { get; set; }
 
             [JsonProperty("fully_diluted_market_cap")]
-            public double? FullyDilutedMarketCap { get; set; }
+            public decimal? FullyDilutedMarketCap { get; set; }
 
             [JsonProperty("last_updated")]
             public string LastUpdated { get; set; }
         }
     }
-
     public class DatabaseManager
-    {
-        private static string connectionString = "Host=localhost;Port=5432;Username=postgres;Password=80085;";
-
-        public static string CreateDatabase()
         {
-            using (var conn = new NpgsqlConnection(connectionString))
-            {
-                conn.Open();
+            private static string connectionString = "Host=localhost;Port=5432;Username=postgres;Password=80085;";
 
-                using (var cmd = new NpgsqlCommand("CREATE DATABASE CryptoDB;", conn))
+            public static string CreateDatabase()
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
                 {
-                    try
+                    conn.Open();
+
+                    using (var cmd = new NpgsqlCommand("CREATE DATABASE CryptoDB;", conn))
                     {
-                        cmd.ExecuteNonQuery();
-                        return "База данных создана!";
-                    }
-                    catch (Exception ex)
-                    {
-                        return $"Ошибка: {ex.Message}";
+                        try
+                        {
+                            cmd.ExecuteNonQuery();
+                            return "База данных создана!";
+                        }
+                        catch (Exception ex)
+                        {
+                            return $"Ошибка: {ex.Message}";
+                        }
                     }
                 }
             }
         }
     }
-}

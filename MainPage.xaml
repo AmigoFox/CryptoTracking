@@ -23,23 +23,36 @@
                 FontSize="20"
                 CornerRadius="10"/>
 
-            <Label x:Name="Name" 
-                   Text="Название криптовалюты"
-                   FontSize="18"
-                   BackgroundColor="LightGray"
-                   TextColor="Black"/>
+            <Label x:Name="NameLabel" 
+       Text="Название криптовалюты"
+       FontSize="18"
+       BackgroundColor="LightGray"
+       TextColor="Black"/>
 
-            <Label x:Name="Price" 
-                   Text="Цена сейчас"
-                   FontSize="18"
-                   BackgroundColor="LightGray"
-                   TextColor="Black"/>
+            <Label x:Name="PriceLabel" 
+       Text="Цена сейчас"
+       FontSize="18"
+       BackgroundColor="LightGray"
+       TextColor="Black"/>
 
-            <Label x:Name="PercentChange1h" 
-                   Text="Изменение цены за последний час"
-                   FontSize="18"
-                   BackgroundColor="LightGray"
-                   TextColor="Black"/>
+            <Label x:Name="PercentChange1hLabel" 
+       Text="Изменение цены за последний час"
+       FontSize="18"
+       BackgroundColor="LightGray"
+       TextColor="Black"/>
+
+            <Label x:Name="PercentChange24hLabel" 
+       Text="Изменение цены за последние 24 часа"
+       FontSize="18"
+       BackgroundColor="LightGray"
+       TextColor="Black"/>
+
+            <Label x:Name="Volume24hLabel" 
+       Text="Объем торгов за 24 часа"
+       FontSize="18"
+       BackgroundColor="LightGray"
+       TextColor="Black"/>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

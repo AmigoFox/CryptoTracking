@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="CryptoTracking.Charts"
+             Title="Crypto Tracker">
+
+    <Grid RowDefinitions="Auto,*">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="14" Padding="10">
+                <Label Text="Список криптовалют" 
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"/>
+
+                <ActivityIndicator x:Name="LoadingIndicator"
+                                   IsRunning="True"
+                                   IsVisible="True"
+                                   Color="Blue"
+                                   HorizontalOptions="Center"/>
+
+                <CollectionView x:Name="CryptoCollectionView"
+                                ItemsSource="{Binding CryptoList}"
+                                SelectionMode="Single"
+                                SelectionChanged="OnCryptoSelected">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="10" BackgroundColor="#f5f5f5">
+                                <Label Text="{Binding Name}" 
+                                       FontSize="14" 
+                                       FontAttributes="Bold"/>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Border x:Name="SelectedCryptoFrame"
+                       IsVisible="False"
+                       Padding="15"
+                       BackgroundColor="#e3f2fd">
+                    <VerticalStackLayout>
+                        <Label Text="Выбранная криптовалюта" 
+                               FontSize="20"/>
+                        <Label x:Name="SelectedCryptoName"
+                               FontSize="18"
+                               FontAttributes="Bold"/>
+                        <Label x:Name="SelectedCryptoSymbol"
+                               TextColor="Gray"/>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
