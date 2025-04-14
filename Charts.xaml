@@ -8,7 +8,7 @@
     <Grid RowDefinitions="Auto,*">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="14" Padding="10">
-                <Label Text="Список криптовалют" 
+                <Label Text="Список криптовалют для анализа" 
                        FontSize="16"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"/>
@@ -35,9 +35,9 @@
                 </CollectionView>
 
                 <Border x:Name="SelectedCryptoFrame"
-                       IsVisible="False"
-                       Padding="15"
-                       BackgroundColor="#e3f2fd">
+                        IsVisible="False"
+                        Padding="15"
+                        BackgroundColor="#e3f2fd">
                     <VerticalStackLayout>
                         <Label Text="Выбранная криптовалюта" 
                                FontSize="20"/>
@@ -48,6 +48,14 @@
                                TextColor="Gray"/>
                     </VerticalStackLayout>
                 </Border>
+
+                <Image x:Name="ChartImage"
+                       Aspect="AspectFit"
+                       HeightRequest="300"
+                       Margin="0,20,0,0"
+                       IsVisible="False"/>
+                <!-- Делаем невидимым по умолчанию -->
+
             </VerticalStackLayout>
         </ScrollView>
     </Grid>
