@@ -189,34 +189,31 @@ public partial class Charts : ContentPage
 
         if (selectedCrypto != null)
         {
-            await LoadCryptoDetails(selectedCrypto.Id); // Изменено с _id на Id
-            await LoadCryptocurrencies_For_Schedule(selectedCrypto.Id); // Изменено с _id на Id
+            await LoadCryptoDetails(selectedCrypto.Id);
+            await LoadCryptocurrencies_For_Schedule(selectedCrypto.Id);
             SelectedCryptoFrame.IsVisible = true;
             SelectedCryptoName.Text = selectedCrypto.Name;
             SelectedCryptoSymbol.Text = selectedCrypto.Symbol;
-            decimal price = selectedCrypto.Price;
-            string lastupdated = selectedCrypto.LastUpdated;
-            string name = selectedCrypto.Name;
-
 
             try
             {
+                // Формирование данных для графика
                 var chartData = new
                 {
                     type = "line",
                     data = new
                     {
-                        labels = new[] { lastupdated },
+                        labels = new[] { selectedCrypto.LastUpdated },
                         datasets = new[]
                         {
-                            new
-                            {
-                                label = "Цена в USD",
-                                data = new[] { price },
-                                borderColor = "#00FF5E",
-                                fill = false
-                            }
+                        new
+                        {
+                            label = "Цена в USD",
+                            data = new[] { selectedCrypto.Price },
+                            borderColor = "#00FF5E",
+                            fill = false
                         }
+                    }
                     },
                     options = new
                     {
@@ -228,10 +225,14 @@ public partial class Charts : ContentPage
                     }
                 };
 
-                var json = JsonSerializer.Serialize(chartData);
+                // Сериализация данных в JSON
+                string json = JsonSerializer.Serialize(chartData);
+
+                // Создание HTTP-запроса
+                using var httpClient = new HttpClient();
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                using var httpClient = new HttpClient();
+                // Отправка запроса на QuickChart
                 var response = await httpClient.PostAsync(
                     "https://quickchart.io/chart/create",
                     content
@@ -242,8 +243,19 @@ public partial class Charts : ContentPage
                     var responseJson = await response.Content.ReadAsStringAsync();
                     var chartUrl = JsonSerializer.Deserialize<QuickChartResponse>(responseJson)?.Url;
 
-                    var imageBytes = await httpClient.GetByteArrayAsync(chartUrl);
-                    ChartImage.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
+                    if (!string.IsNullOrEmpty(chartUrl))
+                    {
+                        var imageBytes = await httpClient.GetByteArrayAsync(chartUrl);
+                        ChartImage.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
+                    }
+                    else
+                    {
+                        await DisplayAlert("Ошибка", "Не удалось получить URL графика", "OK");
+                    }
+                }
+                else
+                {
+                    await DisplayAlert("Ошибка", $"HTTP-статус: {response.StatusCode}", "OK");
                 }
             }
             catch (Exception ex)
@@ -253,9 +265,10 @@ public partial class Charts : ContentPage
         }
     }
 
+    // Класс для ответа от QuickChart
     public class QuickChartResponse
     {
-        public string _url { get; set; }
+        public string Url { get; set; }
     }
 }
 
