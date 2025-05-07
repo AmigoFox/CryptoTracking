@@ -21,7 +21,9 @@ namespace CryptoTracking
             decimal percent_change_7d,
             decimal market_cap,
             decimal market_cap_dominance,
-            decimal fully_diluted_market_cap)
+            decimal fully_diluted_market_cap,
+            DateTime time_stamp
+            )
         {
             string query = @"
         INSERT INTO quotescrypto (
@@ -34,7 +36,8 @@ namespace CryptoTracking
             percent_change_7d, 
             market_cap, 
             market_cap_dominance, 
-            fully_diluted_market_cap
+            fully_diluted_market_cap,
+            time_stamp
         )
         VALUES (
             @id, 
@@ -46,7 +49,8 @@ namespace CryptoTracking
             @percent_change_7d, 
             @market_cap, 
             @market_cap_dominance, 
-            @fully_diluted_market_cap
+            @fully_diluted_market_cap,
+            @time_stamp
         );";
 
             try
@@ -66,7 +70,7 @@ namespace CryptoTracking
                         command.Parameters.AddWithValue("market_cap", market_cap);
                         command.Parameters.AddWithValue("market_cap_dominance", market_cap_dominance);
                         command.Parameters.AddWithValue("fully_diluted_market_cap", fully_diluted_market_cap);
-
+                        command.Parameters.AddWithValue("time_stamp", time_stamp);
                         await command.ExecuteNonQueryAsync();
                     }
                 }

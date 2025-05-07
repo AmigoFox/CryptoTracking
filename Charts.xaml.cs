@@ -1,12 +1,13 @@
 ﻿using Npgsql;
 using System.Collections.ObjectModel;
-using Newtonsoft.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
 namespace CryptoTracking;
 using System.Text;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 public partial class Charts : ContentPage
 {
@@ -83,7 +84,7 @@ public partial class Charts : ContentPage
                 string sql = @"SELECT price, volume_24h, volume_change_24h, 
                               percent_change_1h, percent_change_24h, percent_change_7d, 
                               market_cap, market_cap_dominance, fully_diluted_market_cap 
-                              FROM quotescrypto WHERE id = @id"; // Добавлено WHERE условие
+                              FROM quotescrypto WHERE id = @id";
 
                 using (var command = new NpgsqlCommand(sql, connection))
                 {
@@ -115,46 +116,6 @@ public partial class Charts : ContentPage
         }
         return (0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
-
-    private async Task<List<CryptoInfo>> LoadCryptocurrencies_For_Schedule(int id)
-    {
-        var result = new List<CryptoInfo>();
-
-        try
-        {
-            using (var connection = new NpgsqlConnection(connectionString))
-            {
-                await connection.OpenAsync();
-                string sql = "SELECT id, name, symbol, last_updated FROM cryptocurrencies WHERE id = @id;";
-
-                using (var command = new NpgsqlCommand(sql, connection))
-                {
-                    command.Parameters.AddWithValue("@id", id);
-
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            result.Add(new CryptoInfo
-                            {
-                                Id = reader.GetInt32(0), // Изменено с _id на Id
-                                Name = reader.GetString(1),
-                                Symbol = reader.GetString(2),
-                                LastUpdated = reader.GetDateTime(3).ToString("g")
-                            });
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Ошибка", $"Не удалось загрузить криптовалюты: {ex.Message}", "OK");
-            return null;
-        }
-    }
-
     private async Task LoadCryptoDetails(int cryptoId)
     {
         try
@@ -163,7 +124,7 @@ public partial class Charts : ContentPage
                 percentChange24h, percentChange7d, marketCap,
                 marketCapDominance, fullyDilutedMarketCap) = await GetCryptoDetailsFromDb(cryptoId);
 
-            var cryptoInfo = CryptoList.FirstOrDefault(c => c.Id == cryptoId); // Изменено с _id на Id
+            var cryptoInfo = CryptoList.FirstOrDefault(c => c.Id == cryptoId);
             if (cryptoInfo != null)
             {
                 cryptoInfo.Price = price;
@@ -182,96 +143,138 @@ public partial class Charts : ContentPage
             await DisplayAlert("Ошибка", $"Не удалось загрузить детали: {ex.Message}", "OK");
         }
     }
+    private async Task<List<(DateTime time, decimal price)>> GetPriceHistory(int cryptoId)
+    {
+        var history = new List<(DateTime, decimal)>();
+        var seenTimestamps = new HashSet<DateTime>();
+
+        await using var conn = new NpgsqlConnection(connectionString);
+        await conn.OpenAsync();
+
+        const string sql = @"
+        SELECT time_stamp, price
+        FROM quotescrypto
+        WHERE id = @id;";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@id", cryptoId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var time = reader.GetDateTime(0);
+            var price = reader.GetDecimal(1);
+            int minutes = time.Minute >= 30 ? 30 : 0;
+            var roundedTime = new DateTime(time.Year, time.Month, time.Day, time.Hour, minutes, 0);
+            if (!seenTimestamps.Contains(roundedTime))
+            {
+                history.Add((roundedTime, price));
+                seenTimestamps.Add(roundedTime);
+            }
+
+        }
+        return history;
+    }
+
+
+
+
 
     private async void OnCryptoSelected(object sender, SelectionChangedEventArgs e)
     {
         selectedCrypto = e.CurrentSelection.FirstOrDefault() as CryptoInfo;
+        if (selectedCrypto == null) return;
 
-        if (selectedCrypto != null)
+        await LoadCryptoDetails(selectedCrypto.Id);
+        SelectedCryptoFrame.IsVisible = true;
+        SelectedCryptoName.Text = selectedCrypto.Name;
+        SelectedCryptoSymbol.Text = selectedCrypto.Symbol;
+
+        try
         {
-            await LoadCryptoDetails(selectedCrypto.Id);
-            await LoadCryptocurrencies_For_Schedule(selectedCrypto.Id);
-            SelectedCryptoFrame.IsVisible = true;
-            SelectedCryptoName.Text = selectedCrypto.Name;
-            SelectedCryptoSymbol.Text = selectedCrypto.Symbol;
+            var PriceHistory = await GetPriceHistory(selectedCrypto.Id);
+            var labels = PriceHistory.Select(h => h.time.ToString("yyyy-MM-dd HH:mm")).ToArray();
+            var price = PriceHistory.Select(h => decimal.ToDouble(h.price)).ToArray();
 
-            try
+            // 1) Строим конфиг как строку, чтобы сохранить JS-функцию formatter
+            string chartConfigPrice = $@"{{
+              type: 'line',
+              data: {{
+                labels: [{string.Join(",", labels.Select(l => $"'{l}'"))}],
+                datasets: [{{
+                  label: 'Цена USD',
+                  data: [{string.Join(",", price)}],
+                  borderColor: '#00FF5E',
+                  fill: false
+                }}]
+              }},
+              options: {{
+                responsive: true,
+                plugins: {{
+                  legend: {{ display: false }},
+                  datalabels: {{
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: function(value) {{ return (value.toFixed(6)); }},
+                    font: {{ weight: 'bold', size: 12 }},
+                    color: '#000',
+                    padding: 4
+                  }}
+                }},
+                scales: {{
+                  x: {{ display: true }},
+                  y: {{ display: true }}
+                }}
+              }}
+            }}";
+
+
+            var payload = new
             {
-                // Формирование данных для графика
-                var chartData = new
-                {
-                    type = "line",
-                    data = new
-                    {
-                        labels = new[] { selectedCrypto.LastUpdated },
-                        datasets = new[]
-                        {
-                        new
-                        {
-                            label = "Цена в USD",
-                            data = new[] { selectedCrypto.Price },
-                            borderColor = "#00FF5E",
-                            fill = false
-                        }
-                    }
-                    },
-                    options = new
-                    {
-                        responsive = true,
-                        plugins = new
-                        {
-                            legend = new { display = false }
-                        }
-                    }
-                };
+                chart = chartConfigPrice,
+                width = 1000,
+                height = 800,
+                devicePixelRatio = 1.0,
+                format = "png"
+            };
 
-                // Сериализация данных в JSON
-                string json = JsonSerializer.Serialize(chartData);
+            string json = JsonSerializer.Serialize(payload);
+            using var http = new HttpClient();
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await http.PostAsync("https://quickchart.io/chart/create", content);
+            var body = await response.Content.ReadAsStringAsync();
 
-                // Создание HTTP-запроса
-                using var httpClient = new HttpClient();
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                // Отправка запроса на QuickChart
-                var response = await httpClient.PostAsync(
-                    "https://quickchart.io/chart/create",
-                    content
-                );
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    var chartUrl = JsonSerializer.Deserialize<QuickChartResponse>(responseJson)?.Url;
-
-                    if (!string.IsNullOrEmpty(chartUrl))
-                    {
-                        var imageBytes = await httpClient.GetByteArrayAsync(chartUrl);
-                        ChartImage.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
-                    }
-                    else
-                    {
-                        await DisplayAlert("Ошибка", "Не удалось получить URL графика", "OK");
-                    }
-                }
-                else
-                {
-                    await DisplayAlert("Ошибка", $"HTTP-статус: {response.StatusCode}", "OK");
-                }
-            }
-            catch (Exception ex)
+            if (!response.IsSuccessStatusCode)
             {
-                await DisplayAlert("Ошибка", ex.Message, "OK");
+                await DisplayAlert("Ошибка", $"HTTP {response.StatusCode}\n{body}", "OK");
+                return;
             }
+
+            var respObj = JsonSerializer.Deserialize<QuickChartResponse>(body);
+            if (string.IsNullOrEmpty(respObj?.Url))
+            {
+                await DisplayAlert("Ошибка", $"Пустой URL в ответе:\n{body}", "OK");
+                return;
+            }
+
+            var imageBytes = await http.GetByteArrayAsync(respObj.Url);
+            ChartImage.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
+            ChartImage.IsVisible = true;
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Ошибка", ex.Message, "OK");
         }
     }
 
-    // Класс для ответа от QuickChart
     public class QuickChartResponse
     {
+        [JsonPropertyName("url")]
         public string Url { get; set; }
     }
 }
-
 public partial class CryptoInfo : ObservableObject
 {
     [ObservableProperty]

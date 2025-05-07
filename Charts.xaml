@@ -5,7 +5,6 @@
              x:Class="CryptoTracking.Charts"
              Title="Crypto Tracker">
 
-    <Grid RowDefinitions="Auto,*">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="14" Padding="10">
                 <Label Text="Список криптовалют для анализа" 
@@ -51,12 +50,12 @@
 
                 <Image x:Name="ChartImage"
                        Aspect="AspectFit"
-                       HeightRequest="300"
+                       HeightRequest="800"
                        Margin="0,20,0,0"
                        IsVisible="False"/>
-                <!-- Делаем невидимым по умолчанию -->
+
 
             </VerticalStackLayout>
         </ScrollView>
-    </Grid>
+
 </ContentPage>

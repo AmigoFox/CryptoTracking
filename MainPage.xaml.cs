@@ -68,7 +68,7 @@ namespace CryptoTracking
 
             try
             {
-                await quotes.SaveCryptoDataAsyncQuotes(id, price, volume24h, volumeChange24h, percentChange1h, percentChange24h, percentChange7d, marketCap, marketCapDominance, fullyDilutedMarketCap);
+                await quotes.SaveCryptoDataAsyncQuotes(id, price, volume24h, volumeChange24h, percentChange1h, percentChange24h, percentChange7d, marketCap, marketCapDominance, fullyDilutedMarketCap, DateTime.Now);
             }
             catch (Npgsql.PostgresException ex)
             {
